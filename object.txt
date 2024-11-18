@@ -1,0 +1,9 @@
+userservice - mysql - 8081
+hotelservice - postgres - microservices - 8082
+ratingservice - mongodb - 8083
+serviceregistry - 8761
+apigateway - 8084
+config-server - 8085
+
+
+configure configure server & spring profile concept 
