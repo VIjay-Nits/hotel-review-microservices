@@ -24,7 +24,7 @@ public class Hotel {
     @Column(name = "NAME")
     private String name;
 
-    @Column(name = "LOCATON")
+    @Column(name = "LOCATION")
     private String location;
 
     @Column(name = "ABOUT")

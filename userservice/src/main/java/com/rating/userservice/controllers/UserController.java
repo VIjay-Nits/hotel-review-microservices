@@ -5,6 +5,9 @@ import com.rating.userservice.entities.Rating;
 import com.rating.userservice.entities.User;
 import com.rating.userservice.external.HotelService;
 import com.rating.userservice.services.UserService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,10 +48,15 @@ public class UserController {
 
         return  ResponseEntity.status(HttpStatus.OK).body(userList);
     }
-
+    int retryCount =1;
     // get user by id
     @GetMapping("/{userId}")
+   // @CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
+   // @Retry(name ="ratingHotelRetry",fallbackMethod = "ratingHotelRetryFallback")
+    @RateLimiter(name ="userRateLimiter",fallbackMethod = "ratingHotelRateLimiterFallback")
     public ResponseEntity<User> getUserById(@PathVariable("userId") String id) {
+        System.out.println("Retry Count: "+ retryCount++);
+        System.out.println(System.currentTimeMillis());
         User user = userService.getUserById(id);
 
         //extracting rating list for this user id
@@ -84,6 +92,30 @@ public class UserController {
 
 
         return ResponseEntity.status(HttpStatus.OK).body(user);
+    }
+
+    // fallback method - return type of fallback  method same rhega jis method ka fallback h uske return type ke
+    public ResponseEntity<User> ratingHotelFallback(String id, Exception ex){
+
+        System.out.println(ex.getMessage()+"fallback method - ratingHotelFallback ");
+        User user = User.builder().userId(id).name("Rating / Hotel Service is not working properly").build();
+
+        return new ResponseEntity<>(user,HttpStatus.OK);
+
+    }
+
+    public ResponseEntity<User> ratingHotelRetryFallback(String id,Exception ex){
+        System.out.println("Retry Count: " + retryCount + ex.getMessage());
+        User user = User.builder().userId(id).about("Rating / Hotel service down, Retry Fallback is running").build();
+        return new ResponseEntity<>(user,HttpStatus.OK);
+
+    }
+
+    public ResponseEntity<User> ratingHotelRateLimiterFallback(String id,Exception ex){
+        System.out.println("Rate Limit: " + ex.getMessage());
+        User user = User.builder().userId(id).about("Rating / Hotel service down, Rate Limiter Fallback is running").build();
+        return new ResponseEntity<>(user,HttpStatus.OK);
+
     }
 
 
